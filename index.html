@@ -59,7 +59,7 @@ nav{background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:bl
 .nt{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 6px;border-radius:12px;background:var(--bg);min-width:0}
 .nt b{font-size:28px;line-height:1.1;margin:4px 0}
 .nt small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nt.lo b{color:var(--bad)}.nt.hi b{color:var(--ok)}.nt.av b{color:var(--ac)}
+.nt.lo b{color:var(--bad)}.nt.hi b{color:var(--ok)}.nt.mid b{color:var(--ac)}
 .bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:14px 0 8px;background:var(--bd)}
 .bar i{display:block;height:100%}
 .leg{display:flex;justify-content:space-between;gap:6px;font-size:13px;color:var(--mut);flex-wrap:wrap}
@@ -382,7 +382,7 @@ function notesHTML(g){
   const b=[0,0,0];g.forEach(x=>{const n=Number(x.score);b[n<5?0:n<8?1:2]++});
   const col=(k,v,n,c)=>`<div class="nt ${c}"><span class="mut">${t(k)}</span><b>${v}</b><small class="mut">${n}</small></div>`;
   const dot=(c,k,n)=>`<span><span style="color:${c}">●</span> ${t(k)}: <b>${n}</b></span>`;
-  return `<div class="card"><h2>${t("notes")}</h2><div class="nts">${col("lowest",lo.score,esc(lo.name),"lo")}${col("avgN",av,g.length+" "+t("gamesW"),"av")}${col("highest",hi.score,esc(hi.name),"hi")}</div><div class="bar"><i style="flex:${b[0]};background:var(--bad)"></i><i style="flex:${b[1]};background:var(--ac)"></i><i style="flex:${b[2]};background:var(--ok)"></i></div><div class="leg">${dot("var(--bad)","bLow",b[0])}${dot("var(--ac)","bMid",b[1])}${dot("var(--ok)","bHigh",b[2])}</div></div>`;
+  return `<div class="card"><h2>${t("notes")}</h2><div class="nts">${col("lowest",lo.score,esc(lo.name),"lo")}${col("avgN",av,g.length+" "+t("gamesW"),"mid")}${col("highest",hi.score,esc(hi.name),"hi")}</div><div class="bar"><i style="flex:${b[0]};background:var(--bad)"></i><i style="flex:${b[1]};background:var(--ac)"></i><i style="flex:${b[2]};background:var(--ok)"></i></div><div class="leg">${dot("var(--bad)","bLow",b[0])}${dot("var(--ac)","bMid",b[1])}${dot("var(--ok)","bHigh",b[2])}</div></div>`;
 }
 function render(){
   const g=me_().games,f=norm($("f").value);
