@@ -305,7 +305,7 @@ async function sb(path,o={},retry=true){
   return r;
 }
 async function loadGames(){
-  const r=await sb("/rest/v1/games?select=id,name,cover,score,date&order=created_at.asc");
+  const r=await sb("/rest/v1/games?select=id,name,cover,score,date&order=created_at.asc&user_id=eq."+me);
   if(!r.ok)throw new Error("games "+r.status+": "+(await r.text()).slice(0,140));U.games=await r.json();
 }
 async function boot(){
