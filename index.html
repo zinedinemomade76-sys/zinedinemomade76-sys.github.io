@@ -256,6 +256,14 @@ body.authing{overflow:hidden}
       <button id="saveName" type="button" data-i="saveName"></button>
     </div>
     <div class="card">
+      <h2 data-i="pwT"></h2>
+      <input type="password" id="pwCur" data-ph="pwCur" maxlength="12" autocomplete="current-password">
+      <input type="password" id="pwNew" data-ph="pwNew" maxlength="12" autocomplete="new-password">
+      <input type="password" id="pwNew2" data-ph="pwNew2" maxlength="12" autocomplete="new-password">
+      <p class="err" id="pwMsg"></p>
+      <button id="pwSave" type="button" data-i="pwSave"></button>
+    </div>
+    <div class="card">
       <h2 data-i="opts"></h2>
       <p class="mut" data-i="lang"></p>
       <div class="seg"><button id="bPt" type="button">Português</button><button id="bEn" type="button">English</button></div>
@@ -406,6 +414,8 @@ Object.assign(I.pt,{hiLogin:"Olá, jogador!",hiReg:"Crie a sua conta",subLogin:"
 Object.assign(I.en,{hiLogin:"Hello, player!",hiReg:"Create your account",subLogin:"Welcome back. Continue your journey.",subReg:"Keep your list of finished games.",noAcc:"Don't have an account?",haveAcc:"Already have an account?",toReg:"Create account",toLogin:"Log in",fYear:"Year",fFold:"Folders",fAll:"All",fAllF:"All",fNone:"No folder",fNew:"＋ New folder",fRen:"✎ Rename",fDel:"🗑 Delete folder",fDelQ:"Delete the folder “{n}”? Games are not deleted, they just become unfiled.",fName:"Folder name",fNameBad:"Use 1 to 24 characters and no repeated names.",fMove:"Move to…",fOk:"Save",fCreate:"New folder",fRename:"Rename folder",fMax:"Maximum of 30 folders."});
 Object.assign(I.pt,{pPhoto:"Foto e bio",pChange:"Trocar foto",pRemove:"Remover foto",pBio:"Bio (aparece no seu perfil)",pBioPh:"Fale um pouco sobre você…",pSave:"Guardar foto e bio",pOk:"Perfil atualizado.",pNeed:"Falta executar o SQL do perfil (foto e bio) no Supabase."});
 Object.assign(I.en,{pPhoto:"Photo & bio",pChange:"Change photo",pRemove:"Remove photo",pBio:"Bio (shown on your profile)",pBioPh:"Tell us a bit about you…",pSave:"Save photo & bio",pOk:"Profile updated.",pNeed:"The profile SQL (photo & bio) still needs to be run in Supabase."});
+Object.assign(I.pt,{pwT:"Trocar senha",pwCur:"Senha atual",pwNew:"Nova senha (6 a 12 caracteres)",pwNew2:"Repita a nova senha",pwSave:"Trocar senha",pwOk:"Senha alterada com sucesso.",pwBadCur:"Senha atual incorreta.",pwMis:"As senhas novas não coincidem.",pwLen:"A nova senha deve ter de 6 a 12 caracteres.",pwSame:"A nova senha deve ser diferente da atual."});
+Object.assign(I.en,{pwT:"Change password",pwCur:"Current password",pwNew:"New password (6–12 characters)",pwNew2:"Repeat new password",pwSave:"Change password",pwOk:"Password changed.",pwBadCur:"Current password is wrong.",pwMis:"The new passwords do not match.",pwLen:"The new password must be 6 to 12 characters.",pwSame:"The new password must be different from the current one."});
 const $=id=>document.getElementById(id);
 const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -495,13 +505,28 @@ $("aok").onclick=async()=>{
   }catch(e){$("aerr").textContent=t("eNet")+" ("+(e&&e.message||e)+")"}
   $("aok").disabled=false;
 };
+$("pwSave").onclick=async()=>{
+  const m=$("pwMsg"),c=$("pwCur").value,n=$("pwNew").value,n2=$("pwNew2").value,bad=k=>{m.className="err";m.textContent=t(k)};
+  if(n.length<6||n.length>12)return bad("pwLen");
+  if(n!==n2)return bad("pwMis");
+  if(n===c)return bad("pwSame");
+  $("pwSave").disabled=true;m.className="err";m.textContent="…";
+  try{
+    const v=await sb("/auth/v1/token?grant_type=password",{method:"POST",body:JSON.stringify({email:U.email,password:c}),anon:true});
+    if(!v.ok){bad("pwBadCur");$("pwSave").disabled=false;return}
+    const r=await sb("/auth/v1/user",{method:"PUT",body:JSON.stringify({password:n})});
+    if(!r.ok){const d=await r.json().catch(()=>({}));if(/different/i.test(d.msg||d.message||""))bad("pwSame");else bad("eNet");$("pwSave").disabled=false;return}
+    ["pwCur","pwNew","pwNew2"].forEach(i=>$(i).value="");m.className="err ok";m.textContent=t("pwOk");
+  }catch(e){bad("eNet")}
+  $("pwSave").disabled=false;
+};
 $("out").onclick=async()=>{try{await sb("/auth/v1/logout",{method:"POST"})}catch(e){}S=null;save("jf_sb",null);U=null;me=null;show()};
 
 function head(){$("ttl").textContent=t(TT[page]);$("who").textContent="👤 "+me_().name;$("cnt").textContent=t("catCount").replace("{n}",CAT.length)}
 function go(p){
   page=p;PG.forEach(x=>{$("pg-"+x).classList.toggle("hide",x!==p);$("n-"+x).classList.toggle("on",x===p)});
   const el=$("pg-"+p);el.classList.remove("pgin");void el.offsetWidth;el.classList.add("pgin");
-  head();$("pmsg").textContent="";if(p==="prof"){$("newName").value=me_().name;$("bio").value=U.bio||"";$("bioN").textContent=($("bio").value).length;newAv=null;paintProf();paintShare();paintNtf()}
+  head();$("pmsg").textContent="";if(p==="prof"){$("newName").value=me_().name;$("bio").value=U.bio||"";$("bioN").textContent=($("bio").value).length;newAv=null;$("pwMsg").textContent="";paintProf();paintShare();paintNtf()}
   if(p==="fr"){$("frMain").classList.remove("hide");$("frDet").classList.add("hide");renderFr()}window.scrollTo(0,0);
 }
 PG.forEach(p=>$("n-"+p).onclick=()=>go(p));
