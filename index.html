@@ -273,7 +273,7 @@ nav.navin{animation:navIn .7s .3s cubic-bezier(.2,.8,.2,1) both}
       <div id="dProf"></div>
       <div class="card stats"><div class="stat"><b id="dTot">0</b><span class="mut" data-i="finished"></span></div></div>
       <div id="dNotes"></div>
-      <div class="card"><div id="dList"></div></div>
+      <div class="card"><input type="text" id="dQ" data-ph="phF"><div id="dChips"></div><div id="dList"></div></div>
     </div>
   </div>
   <div id="pg-prof" class="hide">
@@ -334,7 +334,7 @@ nav.navin{animation:navIn .7s .3s cubic-bezier(.2,.8,.2,1) both}
       
     </div>
     <div id="vNotes"></div>
-    <div class="card"><div id="vList"></div></div>
+    <div class="card"><input type="text" id="vQ" data-ph="phF"><div id="vChips"></div><div id="vList"></div></div>
   </div>
   <button id="vMake" type="button" style="width:100%" data-i="vMake"></button>
 </section>
@@ -480,7 +480,7 @@ async function boot(){
     try{
       const r=await sb("/auth/v1/user");
       if(r.status===401||r.status===403){S=null;save("jf_sb",null)}
-      else if(r.ok){const d=await r.json();U={name:(d.user_metadata&&d.user_metadata.name)||"",games:[]};me=d.id;U.email=d.email||"";loadFold(d.user_metadata&&d.user_metadata.folders);await loadGames();await loadProfile();await loadFollows()}
+      else if(r.ok){const d=await r.json();U={name:(d.user_metadata&&d.user_metadata.name)||"",games:[]};me=d.id;U.email=d.email||"";loadFold(d.user_metadata&&d.user_metadata.folders);await loadGames();await loadProfile();pushFolders();await loadFollows()}
       else throw new Error("user "+r.status);
     }catch(e){U=null;me=null;$("aerr").textContent=t("eNet")+" ("+(e&&e.message||e)+")"}
   }
@@ -602,7 +602,11 @@ function loadFold(meta){
 }
 function saveFold(){
   save(foKey(),foD);clearTimeout(foT);
-  foT=setTimeout(()=>{sb("/auth/v1/user",{method:"PUT",body:JSON.stringify({data:{folders:foD}})}).catch(()=>{})},700);
+  foT=setTimeout(()=>{sb("/auth/v1/user",{method:"PUT",body:JSON.stringify({data:{folders:foD}})}).catch(()=>{});pushFolders()},700);
+}
+function pushFolders(){
+  if(!U||!U.pOk||U.fOk===false)return;
+  sb("/rest/v1/profiles?user_id=eq."+me,{method:"PATCH",body:JSON.stringify({folders:foD})}).then(r=>{if(!r.ok)U.fOk=false}).catch(()=>{});
 }
 const yrOf=x=>{const m=String(x.date||"").match(/\d{4}/);return m?m[0]:""};
 const foOf=x=>{const id=foD.m[x.id];return foD.f.some(f=>f.id===id)?id:""};
@@ -812,12 +816,11 @@ async function viewProfile(h){
     if(!r.ok)r=await sb("/rest/v1/profiles?select=user_id,name&is_public=eq.true&handle=eq."+encodeURIComponent(h),{anon:true});
     const p=r.ok?await r.json():[];
     if(!p.length){$("vTitle").textContent=t("vNone");$("vBody").classList.add("hide");return}
-    r=await sb("/rest/v1/games?select=name,cover,score,date&order=created_at.desc&user_id=eq."+p[0].user_id,{anon:true});
+    r=await sb("/rest/v1/games?select=id,name,cover,score,date&order=created_at.desc&user_id=eq."+p[0].user_id,{anon:true});
     const g=r.ok?await r.json():[];
+    const fo=await getFolders(p[0].user_id,true);
     $("vTitle").textContent="🎮 "+p[0].name;$("vProf").innerHTML=profHTML(p[0].name,p[0].avatar,p[0].bio);
-    $("vTot").textContent=g.length;
-    $("vNotes").innerHTML=notesHTML(g);
-    $("vList").innerHTML=g.map(x=>`<div class="row"><div class="it">${cvHtml(x.name,x.cover)}<div><div class="name">${esc(x.name)}</div><span class="mut">${esc(x.date||"")}</span></div></div><span class="badge">${x.score}</span></div>`).join("")||'<p class="mut">'+t("empty")+"</p>";
+    otherInit("v",g,fo);
   }catch(e){$("vTitle").textContent=t("eNet")}
 }
 const F={ids:new Set(),fers:new Set(),ok:false,cur:null};
@@ -881,6 +884,40 @@ async function toggleFollow(uid){
   }catch(e){alert(t("eNet"));return false}
 }
 const gameRow=x=>`<div class="row"><div class="it">${cvHtml(x.name,x.cover)}<div><div class="name">${esc(x.name)}</div><span class="mut">${esc(x.date||"")}</span></div></div><span class="badge">${x.score}</span></div>`;
+/* ---- Filtros ao ver a lista de outra pessoa (ano, pastas, pesquisa) ---- */
+const OT={};
+function otherInit(k,g,fo){
+  OT[k]={g,fo:fo&&Array.isArray(fo.f)?{f:fo.f,m:fo.m&&typeof fo.m==="object"?fo.m:{}}:{f:[],m:{}},y:"all",f:"all"};
+  $(k+"Q").value="";otherRender(k);
+}
+function otherRender(k){
+  const s=OT[k];if(!s)return;
+  const q=norm($(k+"Q").value),fid=x=>{const id=s.fo.m[x.id];return s.fo.f.some(f=>f.id===id)?id:""};
+  const okY=(x,y)=>y==="all"||yrOf(x)===y,okF=(x,f)=>f==="all"||(f==="none"?!fid(x):fid(x)===f);
+  const ys=[...new Set(s.g.map(yrOf).filter(Boolean))].sort((a,b)=>b-a);
+  if(s.y!=="all"&&!ys.includes(s.y))s.y="all";
+  if(s.f!=="all"&&s.f!=="none"&&!s.fo.f.some(f=>f.id===s.f))s.f="all";
+  const chip=(a,v,cur,l,n)=>`<button type="button" class="chip${v===cur?" on":""}" ${a}="${esc(v)}">${l}<b>${n}</b></button>`;
+  let h="";
+  if(ys.length)h+=`<div class="fl-h"><span class="mut">${t("fYear")}</span></div><div class="chips">`+chip("data-oy","all",s.y,t("fAll"),s.g.filter(x=>okF(x,s.f)).length)+ys.map(y=>chip("data-oy",y,s.y,y,s.g.filter(x=>okY(x,y)&&okF(x,s.f)).length)).join("")+"</div>";
+  const byY=s.g.filter(x=>okY(x,s.y));
+  if(s.fo.f.length)h+=`<div class="fl-h"><span class="mut">${t("fFold")}</span></div><div class="chips">`+chip("data-of","all",s.f,t("fAllF"),byY.length)+chip("data-of","none",s.f,t("fNone"),byY.filter(x=>!fid(x)).length)+s.fo.f.map(f=>chip("data-of",f.id,s.f,"📁 "+esc(f.n),byY.filter(x=>fid(x)===f.id).length)).join("")+"</div>";
+  $(k+"Chips").innerHTML=h;$(k+"Chips").style.marginBottom=h?"12px":"0";$(k+"Q").classList.toggle("hide",!s.g.length);
+  const view=s.g.filter(x=>okY(x,s.y)&&okF(x,s.f));
+  $(k+"Tot").textContent=view.length;$(k+"Notes").innerHTML=notesHTML(view);
+  const items=view.filter(x=>norm(x.name).includes(q)).reverse();
+  const fn=x=>{const o=s.fo.f.find(z=>z.id===fid(x));return o?` · <span class="tag">📁 ${esc(o.n)}</span>`:""};
+  $(k+"List").innerHTML=items.length?'<div class="gg">'+items.map(x=>`<div class="gi"><div class="gc">${cvHtml(x.name,x.cover)}<span class="gb">${x.score}</span></div><div class="name gn">${esc(x.name)}</div><div class="mut gd">${esc(x.date||"")}${fn(x)}</div></div>`).join("")+"</div>":'<p class="mut">'+t(s.g.length?"none":"empty")+"</p>";
+}
+["d","v"].forEach(k=>{
+  $(k+"Q").oninput=()=>otherRender(k);
+  $(k+"Chips").onclick=e=>{const b=e.target.closest("button"),s=OT[k];if(!b||!s)return;
+    if(b.dataset.oy!==undefined)s.y=b.dataset.oy;else if(b.dataset.of!==undefined)s.f=b.dataset.of;else return;otherRender(k)};
+});
+async function getFolders(uid,anon){
+  try{const r=await sb("/rest/v1/profiles?select=folders&user_id=eq."+uid,anon?{anon:true}:undefined);
+    if(!r.ok)return null;const d=await r.json();return d[0]&&d[0].folders||null}catch(e){return null}
+}
 function paintFol(){const on=F.ids.has(F.cur);$("dFol").textContent=t(on?"unfol":"fol");$("dFol").className=on?"ghost sm":"sm"}
 async function openUser(uid,name){
   F.cur=uid;$("frMain").classList.add("hide");$("frDet").classList.remove("hide");
@@ -888,10 +925,10 @@ async function openUser(uid,name){
   $("dList").innerHTML="…";$("dNotes").innerHTML="";$("dTot").textContent="…";$("dProf").innerHTML="";
   sb("/rest/v1/profiles?select=bio,avatar&user_id=eq."+uid).then(async r=>{if(!r.ok||F.cur!==uid)return;const d=await r.json();if(d[0]&&F.cur===uid)$("dProf").innerHTML=profHTML(name,d[0].avatar,d[0].bio)}).catch(()=>{});
   try{
-    const r=await sb("/rest/v1/games?select=name,cover,score,date&order=created_at.desc&user_id=eq."+uid);
+    const r=await sb("/rest/v1/games?select=id,name,cover,score,date&order=created_at.desc&user_id=eq."+uid);
     const g=r.ok?await r.json():[];
-    $("dTot").textContent=g.length;$("dNotes").innerHTML=notesHTML(g);
-    $("dList").innerHTML=g.map(gameRow).join("")||'<p class="mut">'+t("empty")+"</p>";
+    const fo=await getFolders(uid);if(F.cur!==uid)return;
+    otherInit("d",g,fo);
   }catch(e){$("dList").innerHTML='<p class="mut">'+t("eNet")+"</p>"}
   window.scrollTo(0,0);
 }
