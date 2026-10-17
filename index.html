@@ -182,6 +182,28 @@ body.authing{overflow:hidden}
 #app.appin{animation:appIn .7s .15s cubic-bezier(.2,.8,.2,1) both}
 nav.navin{animation:navIn .7s .3s cubic-bezier(.2,.8,.2,1) both}
 @media (prefers-reduced-motion:reduce){#auth.leaving,#auth.authin,#app.appin,nav.navin{animation:none}}
+/* ===== Vista para computador (>=900px): menu lateral + conteúdo mais largo ===== */
+@keyframes navInD{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:none}}
+@media (min-width:900px){
+  body:has(#nav:not(.hide)){padding-left:232px}
+  .wrap{max-width:1120px;padding:36px 40px 56px}
+  h1{font-size:28px}
+  .top{margin-bottom:22px}
+  #pg-search,#pg-fr,#pg-prof,#frDet,#view #vBody{max-width:760px}
+  #pg-done,#frDet{max-width:none}
+  #pg-search,#pg-fr,#pg-prof{margin-left:0}
+  nav{left:0;top:0;bottom:0;transform:none;width:232px;border-radius:0;border:0;border-right:1px solid var(--bd);flex-direction:column;justify-content:flex-start;align-items:stretch;gap:6px;padding:28px 14px;box-shadow:none}
+  nav::before{content:"Meus Jogos Zerados";display:block;font-weight:800;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);padding:0 16px 18px}
+  nav button{width:100%;justify-content:flex-start;height:46px;padding:0 16px}
+  nav button.on{padding:0 16px}
+  nav button:not(.on):hover{background:var(--bg);color:var(--tx)}
+  nav .lb,nav button.on .lb{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+  nav.navin{animation-name:navInD}
+  .bdg{top:50%;right:14px;margin-top:-9px}
+  .gg{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:22px 18px}
+  .chip:hover,button.ghost:hover{border-color:var(--ac)}
+  #toast{left:calc(232px + 24px);right:24px;max-width:520px}
+}
 </style>
 </head>
 <body>
@@ -221,6 +243,15 @@ nav.navin{animation:navIn .7s .3s cubic-bezier(.2,.8,.2,1) both}
   <div id="pg-search">
     <div class="card">
       <input type="text" id="q" data-ph="phQ" autocomplete="off">
+      <details class="dt" id="mDet"><summary data-i="mTitle"></summary><div class="dtb">
+        <div class="it" style="margin-bottom:10px"><span id="mCv"></span></div>
+        <input type="text" id="mName" data-ph="mName" maxlength="80" autocomplete="off">
+        <input type="text" id="mUrl" data-ph="cvUrl" inputmode="url" autocomplete="off">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><button class="ghost sm" id="mPick" type="button" data-i="cvPick"></button><input type="file" id="mFile" accept="image/*" class="hide"></div>
+        <div class="rate"><input type="range" id="mScore" min="0" max="10" step="0.5" value="8"><output id="mSv">8</output></div>
+        <p class="err" id="mMsg" style="margin-top:8px"></p>
+        <button id="mSave" type="button" data-i="mAdd"></button>
+      </div></details>
       <div class="mut" id="cnt" style="margin-bottom:6px"></div>
       <div id="res"></div>
       <div id="pend" class="hide">
@@ -440,8 +471,8 @@ const IND=["Shovel Knight","Fez","Braid","Super Meat Boy","The Messenger","Katan
 CAT.push(...IND);
 CAT.splice(0,CAT.length,...new Set(CAT));
 const I={
-pt:{folBack:"Seguir de volta",fersEmpty:"Ainda ninguém te segue.",ntf1:"👤 {n} começou a seguir-te!",ntfN:"👥 {n} novo(s) seguidor(es)!",ntfT:"Notificações",ntfHint:"Receba um aviso quando alguém começar a seguir-te (com o app aberto).",ntfOn:"Ativar notificações",ntfIs:"Notificações ativadas.",ntfDen:"Bloqueadas nas definições do navegador.",ntfNo:"Este aparelho não suporta notificações.",nFr:"Amigos",hFr:"Amigos",frPh:"Pesquisar pelo nome…",frH:"A seguir",frFol:"Seguidores",frEmpty:"Ainda não segue ninguém. Pesquise um nome acima.",frNone:"Nenhum perfil público encontrado.",frNeed:"Falta executar o SQL dos amigos no Supabase.",fol:"Seguir",unfol:"Deixar de seguir",see:"Ver",back:"← Voltar",frPrivT:"O seu perfil está privado, por isso outros não o encontram.",frMakePub:"Tornar público",notes:"Notas",lowest:"Mais baixa",avgN:"Média",highest:"Mais alta",gamesW:"jogos",bLow:"Baixas (<5)",bMid:"Médias (5–7,5)",bHigh:"Altas (8–10)",shareT:"Partilhar a minha lista",share:"Partilhar",shPriv:"Privado",shPub:"Público",shHint:"No modo público, quem tiver o link vê a sua lista (só leitura).",shCopy:"Copiar link",copied:"Copiado!",confirmPub:"Tornar a sua lista pública para poder partilhar?",shareTxt:"Já zerei {n} jogos! 🎮 Veja a minha lista:",gameTxt:"Zerei {g} com nota {s}/10 🎮",vNone:"Perfil não encontrado ou privado.",vMake:"Criar a minha lista",shNeed:"Falta executar o SQL da partilha no Supabase.",eNet:"Sem ligação ou erro no servidor. Tente de novo.",eConf:"Conta criada, mas é preciso desativar a confirmação por e-mail no Supabase.",cvUrl:"Link da capa (opcional)",cvPick:"Escolher imagem do aparelho",cvBad:"Não foi possível ler a imagem.",authSub:"Crie uma conta para guardar a sua lista de jogos terminados.",login:"Entrar",reg:"Cadastrar",create:"Criar conta",user:"Nome de usuário",pass:"Senha (6 a 12 caracteres)",note:"Os seus jogos ficam guardados na sua conta.",nSearch:"Pesquisar",nDone:"Zerados",nProf:"Definições",gAccount:"Conta",gLook:"Aparência",gShare:"Partilha",shareLbl:"Perfil público",hSearch:"Pesquisar jogos",hDone:"Jogos zerados",hProf:"Definições",phQ:"Ex.: Zelda, Hollow Knight…",phF:"Filtrar minha lista…",finished:"terminados",avg:"nota média",save:"Marcar como finalizado",cancel:"Cancelar",name:"O seu nome",saveName:"Guardar nome",opts:"Opções",lang:"Idioma",theme:"Tema",light:"Claro",dark:"Escuro",account:"Conta",out:"Sair",catCount:"{n} jogos no catálogo",done:"Finalizei",inList:"✓ na lista",addQ:"Não encontrou? Adicionar",add:"Adicionar",none:"Nenhum resultado.",empty:"Ainda não há jogos. Pesquise e adicione o primeiro!",eShort:"Nome de 3 a 20 letras e senha de 6 a 12 caracteres.",eTaken:"Esse nome já existe.",eBad:"Usuário ou senha incorretos.",nameOk:"Nome atualizado.",nameShort:"Use de 3 a 20 letras."},
-en:{folBack:"Follow back",fersEmpty:"No one follows you yet.",ntf1:"👤 {n} started following you!",ntfN:"👥 {n} new follower(s)!",ntfT:"Notifications",ntfHint:"Get an alert when someone follows you (while the app is open).",ntfOn:"Enable notifications",ntfIs:"Notifications enabled.",ntfDen:"Blocked in browser settings.",ntfNo:"This device does not support notifications.",nFr:"Friends",hFr:"Friends",frPh:"Search by name…",frH:"Following",frFol:"Followers",frEmpty:"You are not following anyone yet. Search a name above.",frNone:"No public profile found.",frNeed:"The friends SQL still needs to be run in Supabase.",fol:"Follow",unfol:"Unfollow",see:"View",back:"← Back",frPrivT:"Your profile is private, so others cannot find you.",frMakePub:"Make public",notes:"Ratings",lowest:"Lowest",avgN:"Average",highest:"Highest",gamesW:"games",bLow:"Low (<5)",bMid:"Medium (5–7.5)",bHigh:"High (8–10)",shareT:"Share my list",share:"Share",shPriv:"Private",shPub:"Public",shHint:"When public, anyone with the link can see your list (read-only).",shCopy:"Copy link",copied:"Copied!",confirmPub:"Make your list public so you can share it?",shareTxt:"I have finished {n} games! 🎮 Check out my list:",gameTxt:"I finished {g} and rated it {s}/10 🎮",vNone:"Profile not found or private.",vMake:"Create my list",shNeed:"The sharing SQL still needs to be run in Supabase.",eNet:"No connection or server error. Try again.",eConf:"Account created, but email confirmation must be turned off in Supabase.",cvUrl:"Cover image link (optional)",cvPick:"Choose image from device",cvBad:"Could not read the image.",authSub:"Create an account to keep your list of finished games.",login:"Log in",reg:"Sign up",create:"Create account",user:"Username",pass:"Password (6–12 characters)",note:"Your games are saved in your account.",nSearch:"Search",nDone:"Finished",nProf:"Settings",gAccount:"Account",gLook:"Appearance",gShare:"Sharing",shareLbl:"Public profile",hSearch:"Search games",hDone:"Finished games",hProf:"Settings",phQ:"E.g.: Zelda, Hollow Knight…",phF:"Filter my list…",finished:"finished",avg:"average score",save:"Mark as finished",cancel:"Cancel",name:"Your name",saveName:"Save name",opts:"Options",lang:"Language",theme:"Theme",light:"Light",dark:"Dark",account:"Account",out:"Log out",catCount:"{n} games in the catalog",done:"Finished it",inList:"✓ in list",addQ:"Can't find it? Add",add:"Add",none:"No results.",empty:"No games yet. Search and add your first one!",eShort:"Name: 3–20 characters; password: 6–12 characters.",eTaken:"That name already exists.",eBad:"Wrong username or password.",nameOk:"Name updated.",nameShort:"Use 3 to 20 characters."}};
+pt:{mTitle:"Adicionar jogo manualmente",mName:"Nome do jogo",mAdd:"Adicionar à lista",mDup:"Este jogo já está na tua lista.",mNeed:"Escreve o nome do jogo.",mOk:"Jogo adicionado!",folBack:"Seguir de volta",fersEmpty:"Ainda ninguém te segue.",ntf1:"👤 {n} começou a seguir-te!",ntfN:"👥 {n} novo(s) seguidor(es)!",ntfT:"Notificações",ntfHint:"Receba um aviso quando alguém começar a seguir-te (com o app aberto).",ntfOn:"Ativar notificações",ntfIs:"Notificações ativadas.",ntfDen:"Bloqueadas nas definições do navegador.",ntfNo:"Este aparelho não suporta notificações.",nFr:"Amigos",hFr:"Amigos",frPh:"Pesquisar pelo nome…",frH:"A seguir",frFol:"Seguidores",frEmpty:"Ainda não segue ninguém. Pesquise um nome acima.",frNone:"Nenhum perfil público encontrado.",frNeed:"Falta executar o SQL dos amigos no Supabase.",fol:"Seguir",unfol:"Deixar de seguir",see:"Ver",back:"← Voltar",frPrivT:"O seu perfil está privado, por isso outros não o encontram.",frMakePub:"Tornar público",notes:"Notas",lowest:"Mais baixa",avgN:"Média",highest:"Mais alta",gamesW:"jogos",bLow:"Baixas (<5)",bMid:"Médias (5–7,5)",bHigh:"Altas (8–10)",shareT:"Partilhar a minha lista",share:"Partilhar",shPriv:"Privado",shPub:"Público",shHint:"No modo público, quem tiver o link vê a sua lista (só leitura).",shCopy:"Copiar link",copied:"Copiado!",confirmPub:"Tornar a sua lista pública para poder partilhar?",shareTxt:"Já zerei {n} jogos! 🎮 Veja a minha lista:",gameTxt:"Zerei {g} com nota {s}/10 🎮",vNone:"Perfil não encontrado ou privado.",vMake:"Criar a minha lista",shNeed:"Falta executar o SQL da partilha no Supabase.",eNet:"Sem ligação ou erro no servidor. Tente de novo.",eConf:"Conta criada, mas é preciso desativar a confirmação por e-mail no Supabase.",cvUrl:"Link da capa (opcional)",cvPick:"Escolher imagem do aparelho",cvBad:"Não foi possível ler a imagem.",authSub:"Crie uma conta para guardar a sua lista de jogos terminados.",login:"Entrar",reg:"Cadastrar",create:"Criar conta",user:"Nome de usuário",pass:"Senha (6 a 12 caracteres)",note:"Os seus jogos ficam guardados na sua conta.",nSearch:"Pesquisar",nDone:"Zerados",nProf:"Definições",gAccount:"Conta",gLook:"Aparência",gShare:"Partilha",shareLbl:"Perfil público",hSearch:"Pesquisar jogos",hDone:"Jogos zerados",hProf:"Definições",phQ:"Ex.: Zelda, Hollow Knight…",phF:"Filtrar minha lista…",finished:"terminados",avg:"nota média",save:"Marcar como finalizado",cancel:"Cancelar",name:"O seu nome",saveName:"Guardar nome",opts:"Opções",lang:"Idioma",theme:"Tema",light:"Claro",dark:"Escuro",account:"Conta",out:"Sair",catCount:"{n} jogos no catálogo",done:"Finalizei",inList:"✓ na lista",addQ:"Não encontrou? Adicionar",add:"Adicionar",none:"Nenhum resultado.",empty:"Ainda não há jogos. Pesquise e adicione o primeiro!",eShort:"Nome de 3 a 20 letras e senha de 6 a 12 caracteres.",eTaken:"Esse nome já existe.",eBad:"Usuário ou senha incorretos.",nameOk:"Nome atualizado.",nameShort:"Use de 3 a 20 letras."},
+en:{mTitle:"Add a game manually",mName:"Game name",mAdd:"Add to my list",mDup:"This game is already in your list.",mNeed:"Enter the game name.",mOk:"Game added!",folBack:"Follow back",fersEmpty:"No one follows you yet.",ntf1:"👤 {n} started following you!",ntfN:"👥 {n} new follower(s)!",ntfT:"Notifications",ntfHint:"Get an alert when someone follows you (while the app is open).",ntfOn:"Enable notifications",ntfIs:"Notifications enabled.",ntfDen:"Blocked in browser settings.",ntfNo:"This device does not support notifications.",nFr:"Friends",hFr:"Friends",frPh:"Search by name…",frH:"Following",frFol:"Followers",frEmpty:"You are not following anyone yet. Search a name above.",frNone:"No public profile found.",frNeed:"The friends SQL still needs to be run in Supabase.",fol:"Follow",unfol:"Unfollow",see:"View",back:"← Back",frPrivT:"Your profile is private, so others cannot find you.",frMakePub:"Make public",notes:"Ratings",lowest:"Lowest",avgN:"Average",highest:"Highest",gamesW:"games",bLow:"Low (<5)",bMid:"Medium (5–7.5)",bHigh:"High (8–10)",shareT:"Share my list",share:"Share",shPriv:"Private",shPub:"Public",shHint:"When public, anyone with the link can see your list (read-only).",shCopy:"Copy link",copied:"Copied!",confirmPub:"Make your list public so you can share it?",shareTxt:"I have finished {n} games! 🎮 Check out my list:",gameTxt:"I finished {g} and rated it {s}/10 🎮",vNone:"Profile not found or private.",vMake:"Create my list",shNeed:"The sharing SQL still needs to be run in Supabase.",eNet:"No connection or server error. Try again.",eConf:"Account created, but email confirmation must be turned off in Supabase.",cvUrl:"Cover image link (optional)",cvPick:"Choose image from device",cvBad:"Could not read the image.",authSub:"Create an account to keep your list of finished games.",login:"Log in",reg:"Sign up",create:"Create account",user:"Username",pass:"Password (6–12 characters)",note:"Your games are saved in your account.",nSearch:"Search",nDone:"Finished",nProf:"Settings",gAccount:"Account",gLook:"Appearance",gShare:"Sharing",shareLbl:"Public profile",hSearch:"Search games",hDone:"Finished games",hProf:"Settings",phQ:"E.g.: Zelda, Hollow Knight…",phF:"Filter my list…",finished:"finished",avg:"average score",save:"Mark as finished",cancel:"Cancel",name:"Your name",saveName:"Save name",opts:"Options",lang:"Language",theme:"Theme",light:"Light",dark:"Dark",account:"Account",out:"Log out",catCount:"{n} games in the catalog",done:"Finished it",inList:"✓ in list",addQ:"Can't find it? Add",add:"Add",none:"No results.",empty:"No games yet. Search and add your first one!",eShort:"Name: 3–20 characters; password: 6–12 characters.",eTaken:"That name already exists.",eBad:"Wrong username or password.",nameOk:"Name updated.",nameShort:"Use 3 to 20 characters."}};
 Object.assign(I.pt,{hiLogin:"Olá, jogador!",hiReg:"Crie a sua conta",subLogin:"Bem-vindo de volta. Continue a sua jornada.",subReg:"Guarde a sua lista de jogos terminados.",noAcc:"Ainda não tem conta?",haveAcc:"Já tem conta?",toReg:"Criar conta",toLogin:"Entrar",fYear:"Ano",fFold:"Pastas",fAll:"Todos",fAllF:"Todas",fNone:"Sem pasta",fNew:"＋ Nova pasta",fRen:"✎ Renomear",fDel:"🗑 Apagar pasta",fDelQ:"Apagar a pasta “{n}”? Os jogos não são apagados, só ficam sem pasta.",fName:"Nome da pasta",fNameBad:"Use de 1 a 24 caracteres e não repita nomes.",fMove:"Mover para…",fOk:"Guardar",fCreate:"Nova pasta",fRename:"Renomear pasta",fMax:"Máximo de 30 pastas."});
 Object.assign(I.en,{hiLogin:"Hello, player!",hiReg:"Create your account",subLogin:"Welcome back. Continue your journey.",subReg:"Keep your list of finished games.",noAcc:"Don't have an account?",haveAcc:"Already have an account?",toReg:"Create account",toLogin:"Log in",fYear:"Year",fFold:"Folders",fAll:"All",fAllF:"All",fNone:"No folder",fNew:"＋ New folder",fRen:"✎ Rename",fDel:"🗑 Delete folder",fDelQ:"Delete the folder “{n}”? Games are not deleted, they just become unfiled.",fName:"Folder name",fNameBad:"Use 1 to 24 characters and no repeated names.",fMove:"Move to…",fOk:"Save",fCreate:"New folder",fRename:"Rename folder",fMax:"Maximum of 30 folders."});
 Object.assign(I.pt,{pPhoto:"Foto e bio",pChange:"Trocar foto",pRemove:"Remover foto",pBio:"Bio (aparece no seu perfil)",pBioPh:"Fale um pouco sobre você…",pSave:"Guardar foto e bio",pOk:"Perfil atualizado.",pNeed:"Falta executar o SQL do perfil (foto e bio) no Supabase."});
@@ -1003,6 +1034,39 @@ $("cvFile").onchange=e=>{
     im.src=rd.result};
   rd.onerror=()=>{$("cvMsg").textContent=t("cvBad")};
   rd.readAsDataURL(f);e.target.value="";
+};
+/* ---- Adicionar jogo manualmente (nome, capa e nota) ---- */
+let mCover="";
+const mPrev=()=>{$("mCv").innerHTML=cvHtml($("mName").value.trim()||"?",mCover)};
+function mReset(){$("mName").value="";$("mUrl").value="";$("mScore").value=8;$("mSv").textContent="8";mCover="";mPrev()}
+$("mDet").addEventListener("toggle",()=>{if($("mDet").open){mPrev();$("mMsg").textContent=""}});
+$("mName").oninput=mPrev;
+$("mScore").oninput=()=>$("mSv").textContent=$("mScore").value;
+$("mUrl").oninput=()=>{const v=$("mUrl").value.trim();mCover=/^https?:\/\//i.test(v)?v:"";mPrev()};
+$("mPick").onclick=()=>$("mFile").click();
+$("mFile").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{const im=new Image();
+    im.onload=()=>{const k=Math.min(1,320/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);mCover=c.toDataURL("image/jpeg",.8);$("mUrl").value="";$("mMsg").textContent="";mPrev()};
+    im.onerror=()=>{$("mMsg").className="err";$("mMsg").textContent=t("cvBad")};
+    im.src=rd.result};
+  rd.onerror=()=>{$("mMsg").className="err";$("mMsg").textContent=t("cvBad")};
+  rd.readAsDataURL(f);e.target.value="";
+};
+$("mSave").onclick=async()=>{
+  const n=$("mName").value.trim().replace(/\s+/g," "),m=$("mMsg");m.className="err";
+  if(!n){m.textContent=t("mNeed");return}
+  if(me_().games.some(x=>norm(x.name)===norm(n))){m.textContent=t("mDup");return}
+  const row={name:n,cover:mCover||null,score:parseFloat($("mScore").value),date:new Date().toLocaleDateString(prefs.lang==="en"?"en-GB":"pt-PT")};
+  $("mSave").disabled=true;
+  try{
+    const r=await sb("/rest/v1/games",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(row)});
+    if(!r.ok)throw 0;
+    const d=await r.json();U.games.push(d[0]);
+  }catch(e){m.textContent=t("eNet");$("mSave").disabled=false;return}
+  $("mSave").disabled=false;
+  mReset();m.className="err ok";m.textContent=t("mOk");render();search();
 };
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 /* Slideshow da tela de login: troca uma imagem de cada vez com esmaecimento */
