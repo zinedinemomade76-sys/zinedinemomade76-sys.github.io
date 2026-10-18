@@ -509,6 +509,8 @@ Object.assign(I.pt,{pPhoto:"Foto e bio",pChange:"Trocar foto",pRemove:"Remover f
 Object.assign(I.en,{pPhoto:"Photo & bio",pChange:"Change photo",pRemove:"Remove photo",pBio:"Bio (shown on your profile)",pBioPh:"Tell us a bit about you…",pSave:"Save photo & bio",pOk:"Profile updated.",pNeed:"The profile SQL (photo & bio) still needs to be run in Supabase."});
 Object.assign(I.pt,{pwT:"Trocar senha",pwCur:"Senha atual",pwNew:"Nova senha (6 a 12 caracteres)",pwNew2:"Repita a nova senha",pwSave:"Trocar senha",pwOk:"Senha alterada com sucesso.",pwBadCur:"Senha atual incorreta.",pwMis:"As senhas novas não coincidem.",pwLen:"A nova senha deve ter de 6 a 12 caracteres.",pwSame:"A nova senha deve ser diferente da atual."});
 Object.assign(I.en,{pwT:"Change password",pwCur:"Current password",pwNew:"New password (6–12 characters)",pwNew2:"Repeat new password",pwSave:"Change password",pwOk:"Password changed.",pwBadCur:"Current password is wrong.",pwMis:"The new passwords do not match.",pwLen:"The new password must be 6 to 12 characters.",pwSame:"The new password must be different from the current one."});
+Object.assign(I.pt,{emSmtp:"O servidor não conseguiu enviar o email. Confira o SMTP no Supabase (utilizador, senha de app e porta).",emRate:"Pedidos de email demais. Espere alguns minutos e tente de novo."});
+Object.assign(I.en,{emSmtp:"The server could not send the email. Check the SMTP settings in Supabase (user, app password and port).",emRate:"Too many email requests. Wait a few minutes and try again."});
 const $=id=>document.getElementById(id);
 const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -620,7 +622,10 @@ $("emSave").onclick=async()=>{
     /* guarda o nome de utilizador ANTES da troca, para o link e o perfil não dependerem do email falso */
     const r=await sb("/auth/v1/user?redirect_to="+encodeURIComponent(location.origin+location.pathname),{method:"PUT",body:JSON.stringify({email:v,data:{handle:U.handle||hdl()}})});
     const d=await r.json().catch(()=>({}));
-    if(!r.ok){const x=(d.msg||d.message||d.error_description||"").toLowerCase();bad(/already|registered|exists/.test(x)?"emTaken":/valid|invalid/.test(x)?"emBadFmt":"eNet");$("emSave").disabled=false;return}
+    if(!r.ok){const x=String(d.msg||d.message||d.error_description||d.error_code||"").toLowerCase();
+      bad(/already|registered|exists/.test(x)?"emTaken":(r.status===429||/rate|too many|seconds/.test(x))?"emRate":(r.status>=500||/sending|smtp/.test(x))?"emSmtp":/valid|invalid/.test(x)?"emBadFmt":"eNet");
+      if(m.textContent===t("eNet"))m.textContent+=" ("+(x||r.status)+")";
+      $("emSave").disabled=false;return}
     U.hd=U.handle||hdl();U.newEm=d.new_email||v;
     m.className="err ok";m.textContent=t("emSent").replace("{e}",v);
     $("emCur").textContent=t("emPend").replace("{e}",U.newEm);$("newEmail").value="";
@@ -641,7 +646,7 @@ $("aForgot").onclick=e=>{
     try{
       const r=await sb("/auth/v1/recover?redirect_to="+encodeURIComponent(location.origin+location.pathname),{method:"POST",body:JSON.stringify({email:v}),anon:true});
       if(r.status===429){er.textContent=t("fgWait");$("fgOk").disabled=false;return}
-      if(!r.ok)throw 0;
+      if(!r.ok){const d=await r.json().catch(()=>({})),x=String(d.msg||d.message||d.error_description||d.error_code||"");er.textContent=r.status>=500||/sending|smtp/i.test(x)?t("emSmtp"):t("eNet")+" ("+(x||r.status)+")";$("fgOk").disabled=false;return}
       er.className="err ok";er.textContent=t("fgSent");
     }catch(x){er.textContent=t("eNet");$("fgOk").disabled=false}
   };
