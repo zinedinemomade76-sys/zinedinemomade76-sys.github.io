@@ -37,7 +37,7 @@ button.sm{padding:6px 10px;font-size:14px}
 .hide{display:none}
 .mini{display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px}
 input[type=range]{width:100%;accent-color:var(--ac)}
-.rate{display:flex;align-items:center;gap:12px}.rate output{font-size:24px;font-weight:700;color:var(--ac);min-width:44px;text-align:right}
+.rate{display:flex;align-items:center;gap:12px}.rate{gap:6px}.rate input[type=range]{flex:1;min-width:0}.rate .arw{flex:none;width:40px;height:40px;padding:0;margin:0;font-size:15px;line-height:1;touch-action:manipulation;user-select:none}.rate input.num{flex:none;width:74px;box-sizing:border-box;margin:0;padding:8px 6px;font-size:22px;font-weight:700;color:var(--ac);text-align:center}
 nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(calc(100% - 32px),420px);display:flex;justify-content:space-between;align-items:center;gap:4px;background:var(--card);border:1px solid var(--bd);border-radius:999px;padding:8px;box-shadow:0 8px 28px rgba(0,0,0,.35);z-index:5}
 nav button{flex:none;background:transparent;color:var(--mut);border-radius:999px;height:48px;min-width:48px;padding:0 14px;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px}
 nav button.on{background:var(--ac);color:var(--acx);padding:0 20px}
@@ -262,7 +262,7 @@ nav.navin{animation:navIn .7s .3s cubic-bezier(.2,.8,.2,1) both}
         <input type="text" id="mName" data-ph="mName" maxlength="80" autocomplete="off">
         <input type="text" id="mUrl" data-ph="cvUrl" inputmode="url" autocomplete="off">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><button class="ghost sm" id="mPick" type="button" data-i="cvPick"></button><input type="file" id="mFile" accept="image/*" class="hide"></div>
-        <div class="rate"><input type="range" id="mScore" min="0" max="10" step="0.5" value="8"><output id="mSv">8</output></div>
+        <div class="rate"><input type="range" id="mScore" min="0" max="10" step="0.1" value="8"><input type="number" class="num" id="mSv" min="0" max="10" step="0.1" value="8" inputmode="decimal" aria-label="Nota"></div>
         <p class="err" id="mMsg" style="margin-top:8px"></p>
         <button id="mSave" type="button" data-i="mAdd"></button>
       </div></details>
@@ -274,7 +274,7 @@ nav.navin{animation:navIn .7s .3s cubic-bezier(.2,.8,.2,1) both}
           <input type="text" id="cvUrl" data-ph="cvUrl" inputmode="url" autocomplete="off">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="ghost sm" id="cvPick" type="button" data-i="cvPick"></button><input type="file" id="cvFile" accept="image/*" class="hide"><span class="mut" id="cvMsg"></span></div>
         </div>
-        <div class="rate"><input type="range" id="score" min="0" max="10" step="0.5" value="8"><output id="sv">8</output></div>
+        <div class="rate"><input type="range" id="score" min="0" max="10" step="0.1" value="8"><input type="number" class="num" id="sv" min="0" max="10" step="0.1" value="8" inputmode="decimal" aria-label="Nota"></div>
         <div style="display:flex;gap:8px;margin-top:12px"><button id="save" type="button" data-i="save"></button><button id="cancel" class="ghost" type="button" data-i="cancel"></button></div>
       </div>
     </div>
@@ -896,12 +896,27 @@ $("sug").onclick=e=>{
 let ht;
 $("q").oninput=()=>{search();paintSug();clearTimeout(ht);const v=$("q").value.trim();if(v.length>=3)ht=setTimeout(()=>{if($("q").value.trim()===v)rememberQ(v)},2500)};
 $("q").onkeydown=e=>{if(e.key==="Enter"){clearTimeout(ht);rememberQ($("q").value);$("sug").innerHTML="";$("q").blur()}};
-$("res").onclick=e=>{if(e.target.dataset.more){lim=Math.min(lim+12,40);search();return}const n=e.target.dataset.add;if(n){rememberQ(n);pending=n;pendCover=found[n]||"";$("pcv").innerHTML=cvHtml(n,pendCover);$("cvUrl").value="";$("cvMsg").textContent="";$("pname").textContent=n;$("score").value=8;$("sv").textContent="8";$("pend").classList.remove("hide");$("res").innerHTML=""}};
-$("score").oninput=()=>$("sv").textContent=$("score").value;
+$("res").onclick=e=>{if(e.target.dataset.more){lim=Math.min(lim+12,40);search();return}const n=e.target.dataset.add;if(n){rememberQ(n);pending=n;pendCover=found[n]||"";$("pcv").innerHTML=cvHtml(n,pendCover);$("cvUrl").value="";$("cvMsg").textContent="";$("pname").textContent=n;$("score").value=8;$("sv").value=8;$("pend").classList.remove("hide");$("res").innerHTML=""}};
+/* nota de 0 a 10 com 1 casa decimal (ex.: 8.3): barra e caixa numérica ficam sincronizadas */
+const rd1=v=>{v=parseFloat(String(v).replace(",","."));return isNaN(v)?null:Math.min(10,Math.max(0,Math.round(v*10)/10))};
+function bindScore(rid,nid){
+  $(rid).oninput=()=>{$(nid).value=$(rid).value};
+  $(nid).oninput=()=>{const v=rd1($(nid).value);if(v!==null)$(rid).value=v};
+  $(nid).onblur=()=>{const v=rd1($(nid).value);$(nid).value=v===null?$(rid).value:v;$(rid).value=$(nid).value};
+  /* setinhas: ◀ baixa 0,1 e ▶ sobe 0,1 (segurando, repete) */
+  const bump=d=>{const v=rd1($(nid).value);const n=rd1((v===null?parseFloat($(rid).value):v)+d);$(nid).value=n;$(rid).value=n};
+  const mk=(txt,d,lbl)=>{const b=document.createElement("button");b.type="button";b.className="arw ghost";b.textContent=txt;b.setAttribute("aria-label",lbl);
+    let t1,t2;const stop=()=>{clearTimeout(t1);clearInterval(t2)};
+    b.onpointerdown=e=>{e.preventDefault();bump(d);t1=setTimeout(()=>{t2=setInterval(()=>bump(d),90)},400)};
+    ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,stop));
+    b.onclick=e=>e.preventDefault();return b};
+  $(nid).before(mk("◀",-0.1,"Diminuir nota"));$(nid).after(mk("▶",0.1,"Aumentar nota"));
+}
+bindScore("score","sv");
 $("cancel").onclick=()=>{pending=null;$("pend").classList.add("hide");search()};
 $("save").onclick=async()=>{
   if(!pending)return;
-  const row={name:pending,cover:pendCover||null,score:parseFloat($("score").value),date:new Date().toLocaleDateString(prefs.lang==="en"?"en-GB":"pt-PT")};
+  const row={name:pending,cover:pendCover||null,score:rd1($("sv").value)??rd1($("score").value)??8,date:new Date().toLocaleDateString(prefs.lang==="en"?"en-GB":"pt-PT")};
   $("save").disabled=true;
   try{
     const r=await sb("/rest/v1/games",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(row)});
@@ -1196,10 +1211,10 @@ $("cvFile").onchange=e=>{
 /* ---- Adicionar jogo manualmente (nome, capa e nota) ---- */
 let mCover="";
 const mPrev=()=>{$("mCv").innerHTML=cvHtml($("mName").value.trim()||"?",mCover)};
-function mReset(){$("mName").value="";$("mUrl").value="";$("mScore").value=8;$("mSv").textContent="8";mCover="";mPrev()}
+function mReset(){$("mName").value="";$("mUrl").value="";$("mScore").value=8;$("mSv").value=8;mCover="";mPrev()}
 $("mDet").addEventListener("toggle",()=>{if($("mDet").open){mPrev();$("mMsg").textContent=""}});
 $("mName").oninput=mPrev;
-$("mScore").oninput=()=>$("mSv").textContent=$("mScore").value;
+bindScore("mScore","mSv");
 $("mUrl").oninput=()=>{const v=$("mUrl").value.trim();mCover=/^https?:\/\//i.test(v)?v:"";mPrev()};
 $("mPick").onclick=()=>$("mFile").click();
 $("mFile").onchange=e=>{
@@ -1216,7 +1231,7 @@ $("mSave").onclick=async()=>{
   const n=$("mName").value.trim().replace(/\s+/g," "),m=$("mMsg");m.className="err";
   if(!n){m.textContent=t("mNeed");return}
   if(me_().games.some(x=>norm(x.name)===norm(n))){m.textContent=t("mDup");return}
-  const row={name:n,cover:mCover||null,score:parseFloat($("mScore").value),date:new Date().toLocaleDateString(prefs.lang==="en"?"en-GB":"pt-PT")};
+  const row={name:n,cover:mCover||null,score:rd1($("mSv").value)??rd1($("mScore").value)??8,date:new Date().toLocaleDateString(prefs.lang==="en"?"en-GB":"pt-PT")};
   $("mSave").disabled=true;
   try{
     const r=await sb("/rest/v1/games",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(row)});
