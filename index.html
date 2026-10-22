@@ -166,7 +166,7 @@ body.authing{overflow:hidden}
 .gc{position:relative}
 .gg .cv{width:100%;height:auto;aspect-ratio:6/5;border-radius:18px}
 .gg .cv.ph{font-size:34px}
-.gb{position:absolute;top:8px;right:8px;background:rgba(22,25,29,.88);color:#fff;border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px}
+.gt{position:absolute;bottom:8px;left:8px;background:var(--ac);color:#fff;border-radius:999px;padding:2px 9px;font-weight:700;font-size:13px}.gc[data-ed]{cursor:pointer}.gc[data-ed]:active{opacity:.85}.tt{font-size:12px;font-weight:700;color:var(--ac);margin-left:6px}.gb{position:absolute;top:8px;right:8px;background:rgba(22,25,29,.88);color:#fff;border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px}
 .gn{margin-top:8px;line-height:1.25;overflow-wrap:anywhere}
 .gd{font-size:13px}
 .ga{display:flex;gap:6px;margin-top:6px}
@@ -282,7 +282,7 @@ nav.navin{animation:navIn .7s .3s cubic-bezier(.2,.8,.2,1) both}
 
   <div id="pg-done" class="hide">
     <div class="card stats">
-      <div class="stat"><b id="sTot">0</b><span class="mut" data-i="finished"></span></div>
+      <div class="stat"><b id="sTot">0</b><span class="mut" data-i="finished"></span><span class="mut" id="sTm"></span></div>
       
     </div>
     <div id="notesBox"></div>
@@ -509,6 +509,8 @@ Object.assign(I.pt,{pPhoto:"Foto e bio",pChange:"Trocar foto",pRemove:"Remover f
 Object.assign(I.en,{pPhoto:"Photo & bio",pChange:"Change photo",pRemove:"Remove photo",pBio:"Bio (shown on your profile)",pBioPh:"Tell us a bit about you…",pSave:"Save photo & bio",pOk:"Profile updated.",pNeed:"The profile SQL (photo & bio) still needs to be run in Supabase."});
 Object.assign(I.pt,{pwT:"Trocar senha",pwCur:"Senha atual",pwNew:"Nova senha (6 a 12 caracteres)",pwNew2:"Repita a nova senha",pwSave:"Trocar senha",pwOk:"Senha alterada com sucesso.",pwBadCur:"Senha atual incorreta.",pwMis:"As senhas novas não coincidem.",pwLen:"A nova senha deve ter de 6 a 12 caracteres.",pwSame:"A nova senha deve ser diferente da atual."});
 Object.assign(I.en,{pwT:"Change password",pwCur:"Current password",pwNew:"New password (6–12 characters)",pwNew2:"Repeat new password",pwSave:"Change password",pwOk:"Password changed.",pwBadCur:"Current password is wrong.",pwMis:"The new passwords do not match.",pwLen:"The new password must be 6 to 12 characters.",pwSame:"The new password must be different from the current one."});
+Object.assign(I.pt,{edTitle:"Editar jogo",edScore:"Nota (0 a 10)",edTimes:"Vezes zerado",edSave:"Guardar",edSql:"Falta executar o SQL novo (vezes zerado) no Supabase.",edPerm:"Não foi possível guardar. Falta executar o SQL novo no Supabase.",timesT:"vezes zerado"});
+Object.assign(I.en,{edTitle:"Edit game",edScore:"Score (0 to 10)",edTimes:"Times completed",edSave:"Save",edSql:"The new SQL (times completed) still needs to be run in Supabase.",edPerm:"Could not save. The new SQL still needs to be run in Supabase.",timesT:"times completed"});
 Object.assign(I.pt,{emSmtp:"O servidor não conseguiu enviar o email. Confira o SMTP no Supabase (utilizador, senha de app e porta).",emRate:"Pedidos de email demais. Espere alguns minutos e tente de novo."});
 Object.assign(I.en,{emSmtp:"The server could not send the email. Check the SMTP settings in Supabase (user, app password and port).",emRate:"Too many email requests. Wait a few minutes and try again."});
 const $=id=>document.getElementById(id);
@@ -550,8 +552,11 @@ async function sb(path,o={},retry=true){
   if(r.status===401&&S&&retry&&!o.anon&&await refresh()==="ok")return sb(path,o,false);
   return r;
 }
+let noTimes=false;
+function gq(q,o){const base="id,name,cover,score,date";
+  return sb("/rest/v1/games?select="+base+(noTimes?"":",times")+"&"+q,o).then(r=>{if(r.status===400&&!noTimes){noTimes=true;return sb("/rest/v1/games?select="+base+"&"+q,o)}return r})}
 async function loadGames(){
-  const r=await sb("/rest/v1/games?select=id,name,cover,score,date&order=created_at.asc&user_id=eq."+me);
+  const r=await gq("order=created_at.asc&user_id=eq."+me);
   if(!r.ok)throw new Error("games "+r.status+": "+(await r.text()).slice(0,140));U.games=await r.json();
 }
 async function boot(){
@@ -800,11 +805,11 @@ function render(){
   const g=me_().games,f=norm($("f").value);
   paintFlt(g);
   const view=g.filter(x=>okY(x,flt.y)&&okF(x,flt.f));
-  $("sTot").textContent=view.length;
+  $("sTot").textContent=view.length;{const tt=view.reduce((a,x)=>a+(x.times>1?+x.times:1),0);$("sTm").textContent=tt>view.length?" · "+tt+" "+t("timesT"):""}
   $("notesBox").innerHTML=notesHTML(view);
   const items=g.map((x,i)=>({...x,i})).filter(x=>okY(x,flt.y)&&okF(x,flt.f)&&norm(x.name).includes(f)).reverse();
   const fn=x=>{const id=foOf(x),o=foD.f.find(z=>z.id===id);return o?` · <span class="tag">📁 ${esc(o.n)}</span>`:""};
-    $("list").innerHTML=items.length?'<div class="gg">'+items.map(x=>`<div class="gi"><div class="gc">${cvHtml(x.name,x.cover)}<span class="gb">${x.score}</span></div><div class="name gn">${esc(x.name)}</div><div class="mut gd">${esc(x.date||"")}${fn(x)}</div><div class="ga"><button class="ghost sm ia" data-fo="${x.i}" type="button" aria-label="folder">${GI.fo}</button><button class="ghost sm ia" data-sh="${x.i}" type="button" aria-label="share">${GI.sh}</button><button class="ghost sm ia" data-del="${x.i}" type="button" aria-label="✕">${GI.del}</button></div></div>`).join("")+"</div>":'<p class="mut">'+t(g.length?"none":"empty")+"</p>";
+    $("list").innerHTML=items.length?'<div class="gg">'+items.map(x=>`<div class="gi"><div class="gc" data-ed="${x.i}" role="button" tabindex="0" aria-label="${esc(t("edTitle"))}">${cvHtml(x.name,x.cover)}<span class="gb">${x.score}</span>${x.times>1?`<span class="gt">×${x.times}</span>`:""}</div><div class="name gn">${esc(x.name)}</div><div class="mut gd">${esc(x.date||"")}${fn(x)}</div><div class="ga"><button class="ghost sm ia" data-fo="${x.i}" type="button" aria-label="folder">${GI.fo}</button><button class="ghost sm ia" data-sh="${x.i}" type="button" aria-label="share">${GI.sh}</button><button class="ghost sm ia" data-del="${x.i}" type="button" aria-label="✕">${GI.del}</button></div></div>`).join("")+"</div>":'<p class="mut">'+t(g.length?"none":"empty")+"</p>";
 }
 $("f").oninput=render;
 const shP=$("shPn");
@@ -820,6 +825,35 @@ function askName(title,init,cb){
 function newFolder(then){
   if(foD.f.length>=30){alert(t("fMax"));return}
   askName(t("fCreate"),"",v=>{const id=newId();foD.f.push({id,n:v});saveFold();then(id)});
+}
+function editGame(gi){
+  const g=U.games[gi];if(!g)return;
+  const tv=Math.min(99,Math.max(1,parseInt(g.times)||1));
+  openSheet(`<h2>${t("edTitle")}</h2><p class="mut" style="margin:0 0 12px">${esc(g.name)}</p>
+    <div class="mut" style="margin-bottom:4px">${t("edScore")}</div>
+    <div class="rate"><input type="range" id="eScore" min="0" max="10" step="0.1" value="${g.score}"><input type="number" class="num" id="eSv" min="0" max="10" step="0.1" value="${g.score}" inputmode="decimal" aria-label="Nota"></div>
+    <div class="mut" style="margin:14px 0 4px">${t("edTimes")}</div>
+    <div class="rate" style="justify-content:center"><button type="button" class="arw ghost" id="eTm" aria-label="-">◀</button><input type="number" class="num" id="eTv" min="1" max="99" step="1" value="${tv}" inputmode="numeric" aria-label="${t("edTimes")}"><button type="button" class="arw ghost" id="eTp" aria-label="+">▶</button></div>
+    <p class="err" id="eEr" style="margin-top:10px"></p>
+    <div style="display:flex;gap:8px;margin-top:8px"><button id="eOk" type="button">${t("edSave")}</button><button class="ghost" id="eNo" type="button">${t("cancel")}</button></div>`);
+  bindScore("eScore","eSv");
+  const tn=()=>Math.min(99,Math.max(1,parseInt($("eTv").value)||1));
+  $("eTm").onclick=()=>{$("eTv").value=Math.max(1,tn()-1)};
+  $("eTp").onclick=()=>{$("eTv").value=Math.min(99,tn()+1)};
+  $("eTv").onblur=()=>{$("eTv").value=tn()};
+  $("eNo").onclick=closeSheet;
+  $("eOk").onclick=async()=>{
+    const sc=rd1($("eSv").value)??rd1($("eScore").value)??g.score,times=tn();
+    if(noTimes&&times!==1){$("eEr").textContent=t("edSql");return}
+    const body=noTimes?{score:sc}:{score:sc,times};
+    $("eOk").disabled=true;$("eEr").textContent="…";
+    try{
+      const r=await sb("/rest/v1/games?id=eq."+g.id,{method:"PATCH",body:JSON.stringify(body),headers:{Prefer:"return=representation"}});
+      const d=r.ok?await r.json().catch(()=>[]):[];
+      if(!r.ok||!d.length){$("eEr").textContent=t(r.status===400||r.ok?"edPerm":"eNet");$("eOk").disabled=false;return}
+      g.score=sc;if(!noTimes)g.times=times;closeSheet();render();
+    }catch(e){$("eEr").textContent=t("eNet");$("eOk").disabled=false}
+  };
 }
 function moveSheet(gi){
   const g=U.games[gi],cur=foOf(g);
@@ -846,6 +880,7 @@ $("flt").onclick=e=>{
   }
 };
 $("list").onclick=async e=>{
+  {const c=e.target.closest("[data-ed]");if(c&&!e.target.closest("button")){editGame(+c.dataset.ed);return}}
   if(e.target.dataset.fo!==undefined){moveSheet(+e.target.dataset.fo);return}
   if(e.target.dataset.sh!==undefined){shareGame(U.games[+e.target.dataset.sh]);return}
   const i=e.target.dataset.del;if(i===undefined)return;const g=U.games[+i];
@@ -1036,7 +1071,7 @@ async function viewProfile(h){
     if(!r.ok)r=await sb("/rest/v1/profiles?select=user_id,name&is_public=eq.true&handle=eq."+encodeURIComponent(h),{anon:true});
     const p=r.ok?await r.json():[];
     if(!p.length){$("vTitle").textContent=t("vNone");$("vBody").classList.add("hide");return}
-    r=await sb("/rest/v1/games?select=id,name,cover,score,date&order=created_at.desc&user_id=eq."+p[0].user_id,{anon:true});
+    r=await gq("order=created_at.desc&user_id=eq."+p[0].user_id,{anon:true});
     const g=r.ok?await r.json():[];
     const fo=await getFolders(p[0].user_id,true);
     $("vTitle").textContent="🎮 "+p[0].name;$("vProf").innerHTML=profHTML(p[0].name,p[0].avatar,p[0].bio);
@@ -1103,7 +1138,7 @@ async function toggleFollow(uid){
     return true;
   }catch(e){alert(t("eNet"));return false}
 }
-const gameRow=x=>`<div class="row"><div class="it">${cvHtml(x.name,x.cover)}<div><div class="name">${esc(x.name)}</div><span class="mut">${esc(x.date||"")}</span></div></div><span class="badge">${x.score}</span></div>`;
+const gameRow=x=>`<div class="row"><div class="it">${cvHtml(x.name,x.cover)}<div><div class="name">${esc(x.name)}</div><span class="mut">${esc(x.date||"")}</span></div></div><span class="badge">${x.score}</span>${x.times>1?`<span class="tt">×${x.times}</span>`:""}</div>`;
 /* ---- Filtros ao ver a lista de outra pessoa (ano, pastas, pesquisa) ---- */
 const OT={};
 function otherInit(k,g,fo){
@@ -1127,7 +1162,7 @@ function otherRender(k){
   $(k+"Tot").textContent=view.length;$(k+"Notes").innerHTML=notesHTML(view);
   const items=view.filter(x=>norm(x.name).includes(q)).reverse();
   const fn=x=>{const o=s.fo.f.find(z=>z.id===fid(x));return o?` · <span class="tag">📁 ${esc(o.n)}</span>`:""};
-  $(k+"List").innerHTML=items.length?'<div class="gg">'+items.map(x=>`<div class="gi"><div class="gc">${cvHtml(x.name,x.cover)}<span class="gb">${x.score}</span></div><div class="name gn">${esc(x.name)}</div><div class="mut gd">${esc(x.date||"")}${fn(x)}</div></div>`).join("")+"</div>":'<p class="mut">'+t(s.g.length?"none":"empty")+"</p>";
+  $(k+"List").innerHTML=items.length?'<div class="gg">'+items.map(x=>`<div class="gi"><div class="gc">${cvHtml(x.name,x.cover)}<span class="gb">${x.score}</span>${x.times>1?`<span class="gt">×${x.times}</span>`:""}</div><div class="name gn">${esc(x.name)}</div><div class="mut gd">${esc(x.date||"")}${fn(x)}</div></div>`).join("")+"</div>":'<p class="mut">'+t(s.g.length?"none":"empty")+"</p>";
 }
 ["d","v"].forEach(k=>{
   $(k+"Q").oninput=()=>otherRender(k);
@@ -1145,7 +1180,7 @@ async function openUser(uid,name){
   $("dList").innerHTML="…";$("dNotes").innerHTML="";$("dTot").textContent="…";$("dProf").innerHTML="";
   sb("/rest/v1/profiles?select=bio,avatar&user_id=eq."+uid).then(async r=>{if(!r.ok||F.cur!==uid)return;const d=await r.json();if(d[0]&&F.cur===uid)$("dProf").innerHTML=profHTML(name,d[0].avatar,d[0].bio)}).catch(()=>{});
   try{
-    const r=await sb("/rest/v1/games?select=id,name,cover,score,date&order=created_at.desc&user_id=eq."+uid);
+    const r=await gq("order=created_at.desc&user_id=eq."+uid);
     const g=r.ok?await r.json():[];
     const fo=await getFolders(uid);if(F.cur!==uid)return;
     otherInit("d",g,fo);
