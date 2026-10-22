@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.zinedinemomade76_sys.twa",
+    "sha256_cert_fingerprints": ["9F:8E:9B:A9:D4:FB:8D:D3:BA:BC:FD:CC:B4:67:44:AA:7D:FD:ED:96:66:90:1A:7D:6E:70:64:D6:05:94:16:D4"]
+  }
+}]
