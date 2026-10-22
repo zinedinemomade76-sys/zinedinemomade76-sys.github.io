@@ -523,15 +523,31 @@ const SB_URL="https://tcrlorejoegxrapjvcja.supabase.co",SB_KEY="sb_publishable_H
 const em=u=>[...new TextEncoder().encode(norm(u))].map(b=>b.toString(16).padStart(2,"0")).join("")+"@jogoszerados.app";
 let U=null,S=load("jf_sb",null);
 function setS(d){S={access_token:d.access_token,refresh_token:d.refresh_token};save("jf_sb",S)}
-async function refresh(){
-  try{const r=await fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:S.refresh_token})});
-    if(!r.ok)return false;setS(await r.json());return true}catch(e){return false}
+/* sessão: o refresh_token do Supabase só serve UMA vez. Pedidos em paralelo (ou 2 abas) gastavam o mesmo token e a conta saía.
+   Agora há um só pedido de cada vez, e só se termina a sessão quando o servidor diz mesmo que ela é inválida (não por falha de rede). */
+let rfP=null,authBad=false;
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+function refresh(){
+  if(rfP)return rfP;
+  rfP=(async()=>{
+    try{
+      const cur=S.refresh_token;
+      const r=await fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:cur})});
+      if(r.ok){setS(await r.json());return "ok"}
+      if(r.status>=500||r.status===429)return "net";
+      const s2=load("jf_sb",null);   /* outra aba pode já ter renovado */
+      if(s2&&s2.refresh_token&&s2.refresh_token!==cur){S=s2;return "ok"}
+      authBad=true;return "bad";
+    }catch(e){return "net"}
+    finally{setTimeout(()=>{rfP=null},0)}
+  })();
+  return rfP;
 }
 async function sb(path,o={},retry=true){
   const h={apikey:SB_KEY,"Content-Type":"application/json",...(o.headers||{})};
   if(S&&!o.anon)h.Authorization="Bearer "+S.access_token;
   const r=await fetch(SB_URL+path,{method:o.method,body:o.body,headers:h});
-  if(r.status===401&&S&&retry&&!o.anon&&await refresh())return sb(path,o,false);
+  if(r.status===401&&S&&retry&&!o.anon&&await refresh()==="ok")return sb(path,o,false);
   return r;
 }
 async function loadGames(){
@@ -542,7 +558,7 @@ async function boot(){
   if(S){
     try{
       const r=await sb("/auth/v1/user");
-      if(r.status===401||r.status===403){S=null;save("jf_sb",null)}
+      if(r.status===401||r.status===403){if(authBad||r.status===403){S=null;save("jf_sb",null)}else throw new Error("sem rede, tente de novo")}
       else if(r.ok){const d=await r.json();U={name:(d.user_metadata&&d.user_metadata.name)||"",games:[]};me=d.id;U.email=d.email||"";U.hd=(d.user_metadata&&d.user_metadata.handle)||"";U.newEm=d.new_email||"";loadFold(d.user_metadata&&d.user_metadata.folders);await loadGames();await loadProfile();pushFolders();await loadNtfPrefs();await loadFollows()}
       else throw new Error("user "+r.status);
     }catch(e){U=null;me=null;$("aerr").textContent=t("eNet")+" ("+(e&&e.message||e)+")"}
